@@ -1,149 +1,104 @@
 'use strict';
 
-
+/**
+ * Utility to add event listener to multiple elements
+ */
+const addEventOnElements = (elements, eventType, callback) => {
+  elements.forEach(element => element.addEventListener(eventType, callback));
+};
 
 /**
- * add event listener on multiple elements
+ * Preloader
  */
-
-const addEventOnElements = function (elements, eventType, callback) {
-  for (let i = 0, len = elements.length; i < len; i++) {
-    elements[i].addEventListener(eventType, callback);
-  }
-}
-
-
-
-/**
- * PRELOADER
- */
-
 const preloader = document.querySelector("[data-preloader]");
 
-window.addEventListener("DOMContentLoaded", function () {
-  preloader.classList.add("loaded");
+window.addEventListener("DOMContentLoaded", () => {
+  preloader?.classList.add("loaded");
   document.body.classList.add("loaded");
 });
 
-
-
 /**
- * NAVBAR
- * navbar toggle for mobile
+ * Navbar toggle functionality for mobile
  */
-
 const navTogglers = document.querySelectorAll("[data-nav-toggler]");
 const navToggleBtn = document.querySelector("[data-nav-toggle-btn]");
 const navbar = document.querySelector("[data-navbar]");
 const overlay = document.querySelector("[data-overlay]");
 
-const toggleNavbar = function () {
-  navbar.classList.toggle("active");
-  navToggleBtn.classList.toggle("active");
-  overlay.classList.toggle("active");
+const toggleNavbar = () => {
+  navbar?.classList.toggle("active");
+  navToggleBtn?.classList.toggle("active");
+  overlay?.classList.toggle("active");
   document.body.classList.toggle("nav-active");
-}
+};
 
 addEventOnElements(navTogglers, "click", toggleNavbar);
 
-
-
 /**
- * HEADER
- * header active when window scroll down to 100px
+ * Header behavior on scroll
  */
-
 const header = document.querySelector("[data-header]");
 
-window.addEventListener("scroll", function () {
+window.addEventListener("scroll", () => {
   if (window.scrollY >= 100) {
-    header.classList.add("active");
+    header?.classList.add("active");
   } else {
-    header.classList.remove("active");
+    header?.classList.remove("active");
   }
 });
 
-
-
 /**
- * SLIDER
+ * Initialize all sliders on the page
  */
-
 const sliders = document.querySelectorAll("[data-slider]");
 
-const initSlider = function (currentSlider) {
+const initSlider = (slider) => {
+  const sliderContainer = slider.querySelector("[data-slider-container]");
+  const sliderPrevBtn = slider.querySelector("[data-slider-prev]");
+  const sliderNextBtn = slider.querySelector("[data-slider-next]");
 
-  const sliderContainer = currentSlider.querySelector("[data-slider-container]");
-  const sliderPrevBtn = currentSlider.querySelector("[data-slider-prev]");
-  const sliderNextBtn = currentSlider.querySelector("[data-slider-next]");
+  let visibleItems = Number(getComputedStyle(slider).getPropertyValue("--slider-items"));
+  let totalItems = sliderContainer?.childElementCount ?? 0;
+  let maxPosition = totalItems - visibleItems;
 
-  let totalSliderVisibleItems = Number(getComputedStyle(currentSlider).getPropertyValue("--slider-items"));
-  let totalSlidableItems = sliderContainer.childElementCount - totalSliderVisibleItems;
+  let currentPosition = 0;
 
-  let currentSlidePos = 0;
+  const moveSlider = () => {
+    const offset = sliderContainer.children[currentPosition]?.offsetLeft || 0;
+    sliderContainer.style.transform = `translateX(-${offset}px)`;
+  };
 
-  const moveSliderItem = function () {
-    sliderContainer.style.transform = `translateX(-${sliderContainer.children[currentSlidePos].offsetLeft}px)`;
+  const slideNext = () => {
+    currentPosition = (currentPosition >= maxPosition) ? 0 : currentPosition + 1;
+    moveSlider();
+  };
+
+  const slidePrev = () => {
+    currentPosition = (currentPosition <= 0) ? maxPosition : currentPosition - 1;
+    moveSlider();
+  };
+
+  sliderNextBtn?.addEventListener("click", slideNext);
+  sliderPrevBtn?.addEventListener("click", slidePrev);
+
+  if (maxPosition <= 0) {
+    sliderNextBtn.style.display = "none";
+    sliderPrevBtn.style.display = "none";
   }
 
-  /**
-   * NEXT SLIDE
-   */
-  const slideNext = function () {
-    const slideEnd = currentSlidePos >= totalSlidableItems;
-
-    if (slideEnd) {
-      currentSlidePos = 0;
-    } else {
-      currentSlidePos++;
-    }
-
-    moveSliderItem();
-  }
-
-  sliderNextBtn.addEventListener("click", slideNext);
-
-  /**
-   * PREVIOUS SLIDE
-   */
-  const slidePrev = function () {
-    if (currentSlidePos <= 0) {
-      currentSlidePos = totalSlidableItems;
-    } else {
-      currentSlidePos--;
-    }
-
-    moveSliderItem();
-  }
-
-  sliderPrevBtn.addEventListener("click", slidePrev);
-
-  const dontHaveExtraItem = totalSlidableItems <= 0;
-  if (dontHaveExtraItem) {
-    sliderNextBtn.style.display = 'none';
-    sliderPrevBtn.style.display = 'none';
-  }
-
-  /**
-   * slide with [shift + mouse wheel]
-   */
-
-  currentSlider.addEventListener("wheel", function (event) {
-    if (event.shiftKey && event.deltaY > 0) slideNext();
-    if (event.shiftKey && event.deltaY < 0) slidePrev();
+  // Support horizontal scroll with Shift + mouse wheel
+  slider.addEventListener("wheel", (e) => {
+    if (!e.shiftKey) return;
+    e.preventDefault();
+    e.deltaY > 0 ? slideNext() : slidePrev();
   });
 
-  /**
-   * RESPONSIVE
-   */
-
-  window.addEventListener("resize", function () {
-    totalSliderVisibleItems = Number(getComputedStyle(currentSlider).getPropertyValue("--slider-items"));
-    totalSlidableItems = sliderContainer.childElementCount - totalSliderVisibleItems;
-
-    moveSliderItem();
+  window.addEventListener("resize", () => {
+    visibleItems = Number(getComputedStyle(slider).getPropertyValue("--slider-items"));
+    maxPosition = sliderContainer.childElementCount - visibleItems;
+    moveSlider();
   });
+};
 
-}
-
-for (let i = 0, len = sliders.length; i < len; i++) { initSlider(sliders[i]); }
+// Initialize each slider
+sliders.forEach(initSlider);
